@@ -34,7 +34,8 @@ public class PrimerBundleConfiguration {
 
     private boolean enabled = true;
 
-    private Map<AuthType, Boolean> authTypesEnabled = ImmutableMap.of(AuthType.CONFIG, true, AuthType.ANNOTATION, false);
+    private Map<AuthType, Boolean> authTypesEnabled = ImmutableMap.of(AuthType.CONFIG, true, AuthType.ANNOTATION,
+                                                                      false);
 
     @Builder.Default
     private Response.Status absentTokenStatus = Response.Status.BAD_REQUEST;

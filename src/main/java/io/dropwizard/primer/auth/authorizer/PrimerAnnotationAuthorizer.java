@@ -8,5 +8,6 @@ import javax.ws.rs.container.ContainerRequestContext;
 
 public interface PrimerAnnotationAuthorizer {
 
-    void authorize(JsonWebToken jwt, ContainerRequestContext containerRequestContext, Authorize authorize) throws PrimerException;
+    void authorize(JsonWebToken jwt, ContainerRequestContext containerRequestContext, Authorize authorize)
+            throws PrimerException;
 }

@@ -35,10 +35,10 @@ import io.dropwizard.primer.model.PrimerBundleConfiguration;
 import io.dropwizard.primer.model.PrimerSimpleEndpoint;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import java.util.Collections;
 import org.joda.time.DateTime;
 import org.junit.Before;
 
+import java.util.Collections;
 import java.util.Set;
 
 import static org.mockito.Mockito.mock;
@@ -49,21 +49,47 @@ import static org.mockito.Mockito.when;
  */
 public abstract class BaseTest {
 
+    protected static final Environment environment = mock(Environment.class);
+    protected static final ObjectMapper mapper = new ObjectMapper();
+    protected static BundleTestResource bundleTestResource = new BundleTestResource();
     protected final HealthCheckRegistry healthChecks = mock(HealthCheckRegistry.class);
     protected final JerseyEnvironment jerseyEnvironment = mock(JerseyEnvironment.class);
     protected final LifecycleEnvironment lifecycleEnvironment = new LifecycleEnvironment();
-    protected static final Environment environment = mock(Environment.class);
     protected final Bootstrap<?> bootstrap = mock(Bootstrap.class);
     protected final Configuration configuration = mock(Configuration.class);
-
-    protected static final ObjectMapper mapper = new ObjectMapper();
-
+    public JsonWebToken webToken = JsonWebToken.builder()
+            .header(JsonWebTokenHeader.HS512())
+            .claim(JsonWebTokenClaim.builder()
+                           .expiration(DateTime.now()
+                                               .plusYears(1))
+                           .subject("test")
+                           .issuer("test")
+                           .issuedAt(DateTime.now())
+                           .param("user_id", "test")
+                           .param("role", "test")
+                           .param("name", "test")
+                           .param("type", "dynamic")
+                           .build())
+            .build();
+    public String token = null;
+    protected PrimerBundleConfiguration primerBundleConfiguration;
     protected final PrimerBundle<Configuration> bundle = new PrimerBundle<Configuration>() {
 
 
         @Override
+        public String getPrimerConfigAttribute() {
+            return "primer";
+        }
+
+        @Override
         public PrimerBundleConfiguration getPrimerConfiguration(Configuration configuration) {
             return primerBundleConfiguration;
+        }
+
+        @Override
+        public PrimerAnnotationAuthorizer authorizer() {
+            return PrimerRoleAuthorizer.builder()
+                    .build();
         }
 
         @Override
@@ -72,52 +98,18 @@ public abstract class BaseTest {
         }
 
         @Override
-        public PrimerAuthorizationMatrix
-        withAuthorization(Configuration configuration) {
+        public PrimerAuthorizationMatrix withAuthorization(Configuration configuration) {
             return PrimerAuthorizationMatrix.builder()
                     .authorizations(Collections.singletonList(PrimerAuthorization.builder()
-                            .type("dynamic")
-                            .method("GET")
-                            .role("test")
-                            .url("simple/auth/test")
-                    .build())).build();
-        }
-
-        @Override
-        public PrimerAnnotationAuthorizer authorizer() {
-            return PrimerRoleAuthorizer.builder().build();
-        }
-
-        @Override
-        public String getPrimerConfigAttribute() {
-            return "primer";
+                                                                      .type("dynamic")
+                                                                      .method("GET")
+                                                                      .role("test")
+                                                                      .url("simple/auth/test")
+                                                                      .build()))
+                    .build();
         }
     };
-
-    protected PrimerBundleConfiguration primerBundleConfiguration;
-
     protected HmacSHA512Signer hmacSHA512Signer;
-
-    public JsonWebToken webToken = JsonWebToken.builder()
-            .header(
-                    JsonWebTokenHeader.HS512()
-            )
-            .claim(JsonWebTokenClaim
-                    .builder()
-                    .expiration(DateTime.now().plusYears(1))
-                    .subject("test")
-                    .issuer("test")
-                    .issuedAt(DateTime.now())
-                    .param("user_id", "test")
-                    .param("role", "test")
-                    .param("name", "test")
-                    .param("type", "dynamic")
-                    .build())
-            .build();
-
-    public String token = null;
-
-    protected static BundleTestResource bundleTestResource = new BundleTestResource();
 
     @Before
     public void setup() throws Exception {
@@ -143,18 +135,21 @@ public abstract class BaseTest {
 
         bundle.run(configuration, environment);
 
-        hmacSHA512Signer = new HmacSHA512Signer(primerBundleConfiguration.getPrivateKey().getBytes());
+        hmacSHA512Signer = new HmacSHA512Signer(primerBundleConfiguration.getPrivateKey()
+                                                        .getBytes());
 
         token = hmacSHA512Signer.sign(webToken);
 
-        lifecycleEnvironment.getManagedObjects().forEach(object -> {
-            try {
-                object.start();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        lifecycleEnvironment.getManagedObjects()
+                .forEach(object -> {
+                    try {
+                        object.start();
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                });
 
-        environment.jersey().register(bundleTestResource);
+        environment.jersey()
+                .register(bundleTestResource);
     }
 }

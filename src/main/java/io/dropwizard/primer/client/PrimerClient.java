@@ -31,13 +31,11 @@ public interface PrimerClient {
 
     @RequestLine("POST /v1/verify/{app}/{id}")
     @Headers({"Content-Type: application/json", "X-Auth-Token: {token}"})
-    VerifyResponse verify(@Param("app") final String app,
-                          @Param("id") final String id, @Param("token") final String token,
-                          final ServiceUser user) throws PrimerException;
+    VerifyResponse verify(@Param("app") final String app, @Param("id") final String id,
+            @Param("token") final String token, final ServiceUser user) throws PrimerException;
 
     @RequestLine("POST /v1/verify/static/{app}/{id}/{role}")
     @Headers({"Content-Type: application/json", "X-Auth-Token: {token}"})
-    VerifyStaticResponse verify(@Param("app") final String app,
-                                @Param("id") final String id, @Param("token") final String token,
-                                @Param("role") final String role) throws PrimerException;
+    VerifyStaticResponse verify(@Param("app") final String app, @Param("id") final String id,
+            @Param("token") final String token, @Param("role") final String role) throws PrimerException;
 }

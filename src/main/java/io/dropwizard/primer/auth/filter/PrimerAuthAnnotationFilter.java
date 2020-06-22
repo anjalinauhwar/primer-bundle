@@ -12,8 +12,8 @@ import io.dropwizard.primer.auth.authorizer.PrimerAnnotationAuthorizer;
 import io.dropwizard.primer.auth.whitelist.AuthWhitelistValidator;
 import io.dropwizard.primer.core.PrimerError;
 import io.dropwizard.primer.exception.PrimerException;
-import io.dropwizard.primer.util.CryptUtil;
 import io.dropwizard.primer.model.PrimerConfigurationHolder;
+import io.dropwizard.primer.util.CryptUtil;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,19 +42,18 @@ import java.util.concurrent.CompletionException;
 @Singleton
 public class PrimerAuthAnnotationFilter extends AuthFilter {
 
-    @Context private HttpServletRequest requestProxy;
-    @Context private ResourceInfo resourceInfo;
-
     private final PrimerAnnotationAuthorizer authorizer;
-
     private final SecretKeySpec secretKeySpec;
-
     private final GCMParameterSpec ivParameterSpec;
+    @Context
+    private HttpServletRequest requestProxy;
+    @Context
+    private ResourceInfo resourceInfo;
 
     @Builder
     public PrimerAuthAnnotationFilter(final PrimerConfigurationHolder configHolder, final ObjectMapper objectMapper,
-                                      final PrimerAnnotationAuthorizer authorizer,final SecretKeySpec secretKeySpec,
-                                        final GCMParameterSpec ivParameterSpec) {
+            final PrimerAnnotationAuthorizer authorizer, final SecretKeySpec secretKeySpec,
+            final GCMParameterSpec ivParameterSpec) {
         super(AuthType.ANNOTATION, configHolder, objectMapper);
         this.authorizer = authorizer;
         this.secretKeySpec = secretKeySpec;
@@ -66,14 +65,16 @@ public class PrimerAuthAnnotationFilter extends AuthFilter {
     public void filter(ContainerRequestContext requestContext) throws IOException {
 
         Optional<String> token = getToken(requestContext);
-        if (!token.isPresent()) {
-            if (!isEnabled() || isWhitelisted())
+        if(!token.isPresent()) {
+            if(!isEnabled() || isWhitelisted())
                 return;
-            requestContext.abortWith(
-                    Response.status(configHolder.getConfig().getAbsentTokenStatus())
-                            .entity(objectMapper.writeValueAsBytes(PrimerError.builder().errorCode("PR000").message("Bad request")
-                                    .build())).build()
-            );
+            requestContext.abortWith(Response.status(configHolder.getConfig()
+                                                             .getAbsentTokenStatus())
+                                             .entity(objectMapper.writeValueAsBytes(PrimerError.builder()
+                                                                                            .errorCode("PR000")
+                                                                                            .message("Bad request")
+                                                                                            .build()))
+                                             .build());
         } else {
             try {
                 final String decryptedToken = CryptUtil.tokenDecrypt(token.get(), secretKeySpec, ivParameterSpec);
@@ -83,21 +84,22 @@ public class PrimerAuthAnnotationFilter extends AuthFilter {
                 stampHeaders(requestContext, webToken);
 
                 // Do not proceed further with Auth if its disabled or whitelisted
-                if (!isEnabled() || isWhitelisted())
+                if(!isEnabled() || isWhitelisted())
                     return;
                 // Execute authorizer
-                if (authorizer != null)
+                if(authorizer != null)
                     authorizer.authorize(webToken, requestContext, getAuthorizeAnnotation());
 
 
-            } catch (UncheckedExecutionException e) {
-                if (e.getCause() instanceof CompletionException) {
-                    handleException(e.getCause().getCause(), requestContext, token.get());
+            } catch(UncheckedExecutionException e) {
+                if(e.getCause() instanceof CompletionException) {
+                    handleException(e.getCause()
+                                            .getCause(), requestContext, token.get());
                 } else {
                     handleException(e.getCause(), requestContext, token.get());
                 }
-            } catch (Exception e) {
-                if (e.getCause() instanceof PrimerException) {
+            } catch(Exception e) {
+                if(e.getCause() instanceof PrimerException) {
                     handleException(e.getCause(), requestContext, token.get());
                 } else {
                     handleException(e, requestContext, token.get());
@@ -107,19 +109,22 @@ public class PrimerAuthAnnotationFilter extends AuthFilter {
     }
 
     private boolean isEnabled() {
-        return configHolder.getConfig().isEnabled()
-                && configHolder.getConfig().getAuthTypesEnabled().getOrDefault(AuthType.ANNOTATION, false)
-                && Objects.nonNull(getAuthorizeAnnotation());
+        return configHolder.getConfig()
+                       .isEnabled() && configHolder.getConfig()
+                       .getAuthTypesEnabled()
+                       .getOrDefault(AuthType.ANNOTATION, false) && Objects.nonNull(getAuthorizeAnnotation());
     }
 
     private boolean isWhitelisted() {
         // true if whitelisting criteria matches
-        AuthWhitelist authWhitelist = resourceInfo.getResourceMethod().getAnnotation(AuthWhitelist.class);
-        return Objects.nonNull(authWhitelist)
-                && authWhitelist.type().accept(new AuthWhitelistValidator(authWhitelist, requestProxy));
+        AuthWhitelist authWhitelist = resourceInfo.getResourceMethod()
+                .getAnnotation(AuthWhitelist.class);
+        return Objects.nonNull(authWhitelist) && authWhitelist.type()
+                .accept(new AuthWhitelistValidator(authWhitelist, requestProxy));
     }
 
     private Authorize getAuthorizeAnnotation() {
-        return resourceInfo.getResourceMethod().getAnnotation(Authorize.class);
+        return resourceInfo.getResourceMethod()
+                .getAnnotation(Authorize.class);
     }
 }

@@ -15,12 +15,13 @@ public class IPAddressUtil {
     private static final String X_FORWARDED_FOR = "x-forwarded-for";
 
     public static String getIP(HttpServletRequest httpServletRequest) {
-        if (StringUtils.isNotBlank(httpServletRequest.getHeader(X_REAL_IP)))
+        if(StringUtils.isNotBlank(httpServletRequest.getHeader(X_REAL_IP)))
             return httpServletRequest.getHeader(X_REAL_IP);
 
-        if (StringUtils.isNotBlank(httpServletRequest.getHeader(X_FORWARDED_FOR))) {
-            String[] ips = httpServletRequest.getHeader(X_FORWARDED_FOR).split(",");
-            if (ips.length > 0)
+        if(StringUtils.isNotBlank(httpServletRequest.getHeader(X_FORWARDED_FOR))) {
+            String[] ips = httpServletRequest.getHeader(X_FORWARDED_FOR)
+                    .split(",");
+            if(ips.length > 0)
                 return ips[0];
         }
 

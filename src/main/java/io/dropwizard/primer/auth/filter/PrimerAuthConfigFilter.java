@@ -25,8 +25,8 @@ import io.dropwizard.primer.auth.AuthType;
 import io.dropwizard.primer.auth.PrimerAuthorizationRegistry;
 import io.dropwizard.primer.core.PrimerError;
 import io.dropwizard.primer.exception.PrimerException;
-import io.dropwizard.primer.util.CryptUtil;
 import io.dropwizard.primer.model.PrimerConfigurationHolder;
+import io.dropwizard.primer.util.CryptUtil;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,62 +52,68 @@ import java.util.concurrent.CompletionException;
 @Singleton
 public class PrimerAuthConfigFilter extends AuthFilter {
 
-  private final SecretKeySpec secretKeySpec;
+    private final SecretKeySpec secretKeySpec;
 
-  private final GCMParameterSpec ivParameterSpec;
+    private final GCMParameterSpec ivParameterSpec;
 
-  @Builder
-  public PrimerAuthConfigFilter(final PrimerConfigurationHolder configHolder, final ObjectMapper objectMapper,
-                                final SecretKeySpec secretKeySpec, final GCMParameterSpec ivParameterSpec) {
-    super(AuthType.CONFIG, configHolder, objectMapper);
-    this.secretKeySpec = secretKeySpec;
-    this.ivParameterSpec = ivParameterSpec;
-  }
-
-  @Override
-  @Metered(name = "primer")
-  public void filter(ContainerRequestContext requestContext) throws IOException {
-    // Do not proceed further with Auth if its disabled or whitelisted
-    if (!isEnabled() || isWhitelisted(requestContext))
-      return;
-
-    Optional<String> token = getToken(requestContext);
-    if (!token.isPresent()) {
-      requestContext.abortWith(
-          Response.status(configHolder.getConfig().getAbsentTokenStatus())
-              .entity(objectMapper.writeValueAsBytes(PrimerError.builder().errorCode("PR000").message("Bad request")
-                  .build())).build()
-      );
-    } else {
-      try {
-        final String decryptedToken = CryptUtil.tokenDecrypt(token.get(), secretKeySpec, ivParameterSpec);
-        JsonWebToken webToken = authorize(requestContext, decryptedToken, this.authType);
-        //Stamp authorization headers for downstream services which can
-        // use this to stop token forgery & misuse
-        stampHeaders(requestContext, webToken);
-      } catch (UncheckedExecutionException e) {
-        if (e.getCause() instanceof CompletionException) {
-          handleException(e.getCause().getCause(), requestContext, token.get());
-        } else {
-          handleException(e.getCause(), requestContext, token.get());
-        }
-      } catch (Exception e) {
-        if (e.getCause() instanceof PrimerException) {
-          handleException(e.getCause(), requestContext, token.get());
-        } else {
-          handleException(e, requestContext, token.get());
-        }
-      }
+    @Builder
+    public PrimerAuthConfigFilter(final PrimerConfigurationHolder configHolder, final ObjectMapper objectMapper,
+            final SecretKeySpec secretKeySpec, final GCMParameterSpec ivParameterSpec) {
+        super(AuthType.CONFIG, configHolder, objectMapper);
+        this.secretKeySpec = secretKeySpec;
+        this.ivParameterSpec = ivParameterSpec;
     }
-  }
 
-  private boolean isEnabled() {
-    return configHolder.getConfig().isEnabled()
-        && configHolder.getConfig().getAuthTypesEnabled().getOrDefault(AuthType.CONFIG, false);
-  }
+    @Override
+    @Metered(name = "primer")
+    public void filter(ContainerRequestContext requestContext) throws IOException {
+        // Do not proceed further with Auth if its disabled or whitelisted
+        if(!isEnabled() || isWhitelisted(requestContext))
+            return;
 
-  private boolean isWhitelisted(ContainerRequestContext requestContext) {
-    //Short circuit for all white listed urls
-    return PrimerAuthorizationRegistry.isWhilisted(requestContext.getUriInfo().getPath());
-  }
+        Optional<String> token = getToken(requestContext);
+        if(!token.isPresent()) {
+            requestContext.abortWith(Response.status(configHolder.getConfig()
+                                                             .getAbsentTokenStatus())
+                                             .entity(objectMapper.writeValueAsBytes(PrimerError.builder()
+                                                                                            .errorCode("PR000")
+                                                                                            .message("Bad request")
+                                                                                            .build()))
+                                             .build());
+        } else {
+            try {
+                final String decryptedToken = CryptUtil.tokenDecrypt(token.get(), secretKeySpec, ivParameterSpec);
+                JsonWebToken webToken = authorize(requestContext, decryptedToken, this.authType);
+                //Stamp authorization headers for downstream services which can
+                // use this to stop token forgery & misuse
+                stampHeaders(requestContext, webToken);
+            } catch(UncheckedExecutionException e) {
+                if(e.getCause() instanceof CompletionException) {
+                    handleException(e.getCause()
+                                            .getCause(), requestContext, token.get());
+                } else {
+                    handleException(e.getCause(), requestContext, token.get());
+                }
+            } catch(Exception e) {
+                if(e.getCause() instanceof PrimerException) {
+                    handleException(e.getCause(), requestContext, token.get());
+                } else {
+                    handleException(e, requestContext, token.get());
+                }
+            }
+        }
+    }
+
+    private boolean isEnabled() {
+        return configHolder.getConfig()
+                       .isEnabled() && configHolder.getConfig()
+                       .getAuthTypesEnabled()
+                       .getOrDefault(AuthType.CONFIG, false);
+    }
+
+    private boolean isWhitelisted(ContainerRequestContext requestContext) {
+        //Short circuit for all white listed urls
+        return PrimerAuthorizationRegistry.isWhilisted(requestContext.getUriInfo()
+                                                               .getPath());
+    }
 }

@@ -13,25 +13,27 @@ import java.util.List;
 
 /**
  * Created by pavan.kumar on 2019-02-20
- *
+ * <p>
  * Example authorizer class for role based authorization.
  * Annotation Usage: @Authorize(value = {"roleName"})
- *
  */
 @Slf4j
 @Builder
 public class PrimerRoleAuthorizer implements PrimerAnnotationAuthorizer {
 
     @Override
-    public void authorize(JsonWebToken jwt, ContainerRequestContext containerRequestContext, Authorize authorize) throws PrimerException {
+    public void authorize(JsonWebToken jwt, ContainerRequestContext containerRequestContext, Authorize authorize)
+            throws PrimerException {
 
         List<String> authorizedRoles = Arrays.asList(authorize.value());
 
-        if (authorizedRoles.contains(jwt.claim().getParameter("role")))
+        if(authorizedRoles.contains(jwt.claim()
+                                            .getParameter("role")))
             return;
 
-        if(jwt.claim().getParameter("roles") != null &&
-                !Collections.disjoint(authorizedRoles, (List) jwt.claim().getParameter("roles")))
+        if(jwt.claim()
+                   .getParameter("roles") != null && !Collections.disjoint(authorizedRoles, (List)jwt.claim()
+                .getParameter("roles")))
             return;
 
         throw PrimerException.builder()

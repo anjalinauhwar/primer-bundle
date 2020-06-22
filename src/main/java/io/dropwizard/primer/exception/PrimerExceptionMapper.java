@@ -35,6 +35,8 @@ public class PrimerExceptionMapper implements ExceptionMapper<PrimerException> {
                 .errorCode(exception.getErrorCode())
                 .message(exception.getMessage())
                 .build();
-        return Response.status(exception.getStatus()).entity(errorData).build();
+        return Response.status(exception.getStatus())
+                .entity(errorData)
+                .build();
     }
 }

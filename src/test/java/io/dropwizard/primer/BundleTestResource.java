@@ -31,20 +31,23 @@ public class BundleTestResource {
     @GET
     @Path("/simple/noauth/test")
     public Response testNoAuth() {
-        return Response.status(Response.Status.OK).build();
+        return Response.status(Response.Status.OK)
+                .build();
     }
 
     @GET
     @Path("/simple/auth/test")
     public Response testAuth() {
-        return Response.status(Response.Status.OK).build();
+        return Response.status(Response.Status.OK)
+                .build();
     }
 
     @GET
     @Authorize(value = {"test", "test1"})
     @Path("/annotation/auth")
     public Response testAnnotationAuth() {
-        return Response.status(Response.Status.OK).build();
+        return Response.status(Response.Status.OK)
+                .build();
     }
 
 }

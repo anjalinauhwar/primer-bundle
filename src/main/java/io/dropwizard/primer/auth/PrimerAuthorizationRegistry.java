@@ -60,9 +60,8 @@ public class PrimerAuthorizationRegistry {
     private static HmacSHA512Verifier verifier;
     private static ExpiryValidator expiryValidator;
 
-    public static void init(PrimerAuthorizationMatrix matrix,
-                            Set<String> whiteListUrls, PrimerBundleConfiguration configuration,
-                            JsonWebTokenParser tokenParser, HmacSHA512Verifier tokenVerifier) {
+    public static void init(PrimerAuthorizationMatrix matrix, Set<String> whiteListUrls,
+            PrimerBundleConfiguration configuration, JsonWebTokenParser tokenParser, HmacSHA512Verifier tokenVerifier) {
         parser = tokenParser;
         verifier = tokenVerifier;
 
@@ -70,29 +69,34 @@ public class PrimerAuthorizationRegistry {
 
         Map<String, PrimerAuthorization> authList = new HashMap<>();
         List<String> urlPatterns = new ArrayList<>();
-        if (matrix != null) {
+        if(matrix != null) {
             if(matrix.getAuthorizations() != null) {
-                matrix.getAuthorizations().forEach(auth -> {
-                    final String pattern = generatePathExpression(auth.getUrl());
-                    urlPatterns.add(pattern);
-                    authList.put(pattern, auth);
-                });
+                matrix.getAuthorizations()
+                        .forEach(auth -> {
+                            final String pattern = generatePathExpression(auth.getUrl());
+                            urlPatterns.add(pattern);
+                            authList.put(pattern, auth);
+                        });
             }
             if(matrix.getStaticAuthorizations() != null) {
-                matrix.getStaticAuthorizations().forEach(auth -> {
-                    final String pattern = generatePathExpression(auth.getUrl());
-                    urlPatterns.add(pattern);
-                    authList.put(pattern, auth);
-                });
+                matrix.getStaticAuthorizations()
+                        .forEach(auth -> {
+                            final String pattern = generatePathExpression(auth.getUrl());
+                            urlPatterns.add(pattern);
+                            authList.put(pattern, auth);
+                        });
             }
             if(matrix.getAutoAuthorizations() != null) {
-                matrix.getAutoAuthorizations().forEach(auth -> {
-                    final String pattern = generatePathExpression(auth.getUrl());
-                    urlPatterns.add(pattern);
-                    authList.put(pattern, auth);
-                });
+                matrix.getAutoAuthorizations()
+                        .forEach(auth -> {
+                            final String pattern = generatePathExpression(auth.getUrl());
+                            urlPatterns.add(pattern);
+                            authList.put(pattern, auth);
+                        });
             }
-            urlPatterns.sort((o1, o2) -> tokenMatch.matcher(o2).groupCount() - tokenMatch.matcher(o1).groupCount());
+            urlPatterns.sort((o1, o2) -> tokenMatch.matcher(o2)
+                                                 .groupCount() - tokenMatch.matcher(o1)
+                                                 .groupCount());
             urlPatterns.sort(Comparator.reverseOrder());
         }
 
@@ -115,7 +119,9 @@ public class PrimerAuthorizationRegistry {
         List<String> whiteList = new ArrayList<>();
 
         whiteListUrls.forEach(url -> whiteList.add(generatePathExpression(url)));
-        whiteList.sort((o1, o2) -> tokenMatch.matcher(o2).groupCount() - tokenMatch.matcher(o1).groupCount());
+        whiteList.sort((o1, o2) -> tokenMatch.matcher(o2)
+                                           .groupCount() - tokenMatch.matcher(o1)
+                                           .groupCount());
         whiteList.sort(Comparator.reverseOrder());
         return whiteList;
     }
@@ -124,13 +130,14 @@ public class PrimerAuthorizationRegistry {
         return path.replaceAll("\\{(([^/])+\\})", "(([^/])+)");
     }
 
-    public static JsonWebToken authorize(final String path, final String method, final String token, final AuthType authType) {
+    public static JsonWebToken authorize(final String path, final String method, final String token,
+            final AuthType authType) {
         return lruCache.get(TokenKey.builder()
-                .method(method)
-                .path(path)
-                .token(token)
-                .authType(authType)
-                .build());
+                                    .method(method)
+                                    .path(path)
+                                    .token(token)
+                                    .authType(authType)
+                                    .build());
     }
 
     public static boolean isWhilisted(final String path) {
@@ -139,11 +146,15 @@ public class PrimerAuthorizationRegistry {
     }
 
     private static boolean isAuthorized(final String id, final String method, final String role) {
-        return authList.get(id).getRoles().contains(role) && authList.get(id).getMethods().contains(method);
+        return authList.get(id)
+                       .getRoles()
+                       .contains(role) && authList.get(id)
+                       .getMethods()
+                       .contains(method);
     }
 
     private static JsonWebToken verify(JsonWebToken webToken, String token, String type) throws PrimerException {
-        switch (type) {
+        switch(type) {
             case "dynamic":
                 return verifyDynamic(webToken, token);
             case "static":
@@ -158,18 +169,20 @@ public class PrimerAuthorizationRegistry {
     }
 
     private static JsonWebToken verifyDynamic(JsonWebToken webToken, String token) throws PrimerException {
-        final VerifyResponse verifyResponse = PrimerBundle.getPrimerClient().verify(
-                webToken.claim().issuer(),
-                webToken.claim().subject(),
-                token,
-                ServiceUser.builder()
-                        .id((String) webToken.claim().getParameter("user_id"))
-                        .name((String) webToken.claim().getParameter("name"))
-                        .role((String) webToken.claim().getParameter("role"))
-                        .build()
-        );
-        val result = (!Strings.isNullOrEmpty(verifyResponse.getToken()) && !Strings.isNullOrEmpty(verifyResponse.getUserId()));
-        if (!result) {
+        final VerifyResponse verifyResponse = PrimerBundle.getPrimerClient()
+                .verify(webToken.claim()
+                                .issuer(), webToken.claim()
+                                .subject(), token, ServiceUser.builder()
+                                .id((String)webToken.claim()
+                                        .getParameter("user_id"))
+                                .name((String)webToken.claim()
+                                        .getParameter("name"))
+                                .role((String)webToken.claim()
+                                        .getParameter("role"))
+                                .build());
+        val result = (!Strings.isNullOrEmpty(verifyResponse.getToken()) && !Strings.isNullOrEmpty(
+                verifyResponse.getUserId()));
+        if(!result) {
             log.debug("dynamic_token_validation_failed token:{} verify_response:{}", token, verifyResponse);
             blacklist(token);
             throw PrimerException.builder()
@@ -182,10 +195,14 @@ public class PrimerAuthorizationRegistry {
     }
 
     private static JsonWebToken verifyStatic(JsonWebToken webToken, String token) throws PrimerException {
-        final VerifyStaticResponse verifyStaticResponse = PrimerBundle.getPrimerClient().verify(webToken.claim().issuer(),
-                webToken.claim().subject(), token, (String) webToken.claim().getParameter("role"));
-        val result = (!Strings.isNullOrEmpty(verifyStaticResponse.getToken()) && !Strings.isNullOrEmpty(verifyStaticResponse.getId()));
-        if (!result) {
+        final VerifyStaticResponse verifyStaticResponse = PrimerBundle.getPrimerClient()
+                .verify(webToken.claim()
+                                .issuer(), webToken.claim()
+                                .subject(), token, (String)webToken.claim()
+                        .getParameter("role"));
+        val result = (!Strings.isNullOrEmpty(verifyStaticResponse.getToken()) && !Strings.isNullOrEmpty(
+                verifyStaticResponse.getId()));
+        if(!result) {
             log.debug("dynamic_token_validation_failed token:{} verify_response:{}", token, verifyStaticResponse);
             blacklist(token);
             throw PrimerException.builder()
@@ -201,9 +218,12 @@ public class PrimerAuthorizationRegistry {
         final JsonWebToken webToken = parser.parse(tokenKey.getToken());
         verifier.verifySignature(webToken);
         expiryValidator.validate(webToken);
-        final String role = (String) webToken.claim().getParameter("role");
-        val index = urlPatterns.stream().filter(tokenKey.getPath()::matches).findFirst();
-        if (!index.isPresent()) {
+        final String role = (String)webToken.claim()
+                .getParameter("role");
+        val index = urlPatterns.stream()
+                .filter(tokenKey.getPath()::matches)
+                .findFirst();
+        if(!index.isPresent()) {
             log.debug("No index found for {}", tokenKey);
             throw PrimerException.builder()
                     .errorCode("PR004")
@@ -212,26 +232,28 @@ public class PrimerAuthorizationRegistry {
                     .build();
         }
         //Short circuit for method auth failure
-        if (!isAuthorized(index.get(), tokenKey.getMethod(), role)) {
-            log.debug("Role, method combo check failed for Method={} Role={} Index={}",
-                    index.get(), role, tokenKey.getMethod());
+        if(!isAuthorized(index.get(), tokenKey.getMethod(), role)) {
+            log.debug("Role, method combo check failed for Method={} Role={} Index={}", index.get(), role,
+                      tokenKey.getMethod());
             throw PrimerException.builder()
                     .errorCode("PR004")
                     .message("Unauthorized")
                     .status(401)
                     .build();
         }
-        switch (authList.get(index.get()).getType()) {
+        switch(authList.get(index.get())
+                .getType()) {
             case "dynamic":
                 return verify(webToken, tokenKey.getToken(), "dynamic");
             case "static":
                 return verify(webToken, tokenKey.getToken(), "static");
             case "auto":
-                final String type = (String) webToken.claim().getParameter("type");
+                final String type = (String)webToken.claim()
+                        .getParameter("type");
                 return verify(webToken, tokenKey.getToken(), type);
             default:
-                log.debug("invalid_token_type for index:{} token:{}",
-                        authList.get(index.get()).getType(), tokenKey);
+                log.debug("invalid_token_type for index:{} token:{}", authList.get(index.get())
+                        .getType(), tokenKey);
                 throw PrimerException.builder()
                         .errorCode("PR004")
                         .message("Unauthorized")
@@ -245,12 +267,13 @@ public class PrimerAuthorizationRegistry {
         verifier.verifySignature(webToken);
         expiryValidator.validate(webToken);
 
-        final String type = (String) webToken.claim().getParameter("type");
+        final String type = (String)webToken.claim()
+                .getParameter("type");
         return verify(webToken, tokenKey.getToken(), type);
     }
 
     private static JsonWebToken verifyToken(TokenKey tokenKey) throws PrimerException {
-        switch (tokenKey.getAuthType()) {
+        switch(tokenKey.getAuthType()) {
             case CONFIG:
                 return verifyConfigAuthToken(tokenKey);
             case ANNOTATION:

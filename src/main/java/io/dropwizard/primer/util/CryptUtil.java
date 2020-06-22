@@ -14,14 +14,14 @@ public class CryptUtil {
         throw new IllegalStateException("Utility class");
     }
 
-    public static String tokenDecrypt(final String token,
-                                      final SecretKeySpec secretKeySpec,
-                                      final GCMParameterSpec ivParameterSpec) {
+    public static String tokenDecrypt(final String token, final SecretKeySpec secretKeySpec,
+            final GCMParameterSpec ivParameterSpec) {
         try {
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding", "SunJCE");
             cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
-            return new String(cipher.doFinal(Base64.getDecoder().decode(token)));
-        } catch (Exception e) {
+            return new String(cipher.doFinal(Base64.getDecoder()
+                                                     .decode(token)));
+        } catch(Exception e) {
             return token;
         }
     }

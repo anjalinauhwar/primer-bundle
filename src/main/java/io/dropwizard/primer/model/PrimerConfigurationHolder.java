@@ -5,8 +5,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class PrimerConfigurationHolder {
 
-    private AtomicReference<PrimerBundleConfiguration> configReference;
     private final AtomicLong lastUpdatedTimestamp;
+    private AtomicReference<PrimerBundleConfiguration> configReference;
 
     public PrimerConfigurationHolder(PrimerBundleConfiguration primerBundleConfiguration) {
         this.configReference = new AtomicReference<>(primerBundleConfiguration);

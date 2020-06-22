@@ -32,8 +32,8 @@ public class AuthWhitelistValidator implements WhitelistType.Visitor<Boolean> {
      */
     @Override
     public Boolean visitOptional() {
-        return Boolean.parseBoolean(authWhitelist.value())
-                && StringUtils.isBlank(requestProxy.getHeader(HttpHeaders.AUTHORIZATION));
+        return Boolean.parseBoolean(authWhitelist.value()) && StringUtils.isBlank(
+                requestProxy.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     /**
@@ -44,8 +44,8 @@ public class AuthWhitelistValidator implements WhitelistType.Visitor<Boolean> {
      */
     @Override
     public Boolean visitIP() {
-        return Arrays
-                .asList(authWhitelist.value().split(","))
+        return Arrays.asList(authWhitelist.value()
+                                     .split(","))
                 .contains(IPAddressUtil.getIP(requestProxy));
     }
 }
