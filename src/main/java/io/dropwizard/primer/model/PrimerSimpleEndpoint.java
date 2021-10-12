@@ -16,6 +16,7 @@
 
 package io.dropwizard.primer.model;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import lombok.*;
 
 /**

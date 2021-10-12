@@ -16,12 +16,15 @@
 
 package io.dropwizard.primer.model;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
  * @author phaneesh
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
+@JsonSubTypes({@JsonSubTypes.Type(name = "simple", value = PrimerSimpleEndpoint.class),
+        @JsonSubTypes.Type(name = "ranger", value = PrimerRangerEndpoint.class)})
 public abstract class PrimerEndpoint {
 
     public abstract String getType();
